@@ -1,0 +1,120 @@
+# devops: MongoDB API Azure DevOps
+
+parameters:
+  - name: TIMEOUT
+    type: number
+    default: 300
+    values:
+    - 60
+    - 120
+    - 180
+    - 240
+    - 300
+
+# Set variables
+variables:
+  adp_path: '/adp'
+  WS: '/opt/projects/mongo-api'
+  TO: ${{ parameters.TIMEOUT }}
+
+trigger:
+- main
+
+# pool:
+#   vmImage: 'ubuntu-latest'
+pool: AZP-Pool
+
+stages:
+- stage: Preload
+  displayName: Preload Tasks
+  jobs:
+  - job: preload
+    displayName: Create Backup Workspace
+    steps: 
+      - bash: |
+          if [ -e $(WS) ]; then
+            if [ -e "$(WS)/main.tf" ]; then
+              cd $(WS)
+              echo "0. Destroy VM"
+              terraform init
+              terraform destroy -auto-approve
+            fi
+          else
+            echo "0. Create Backup Workspace"
+            mkdir -p $(WS)
+          fi
+
+- stage: VM
+  displayName: Deploy VM
+  jobs:
+  - job: vm
+    displayName: VM Deployment
+    steps: 
+      - bash: |
+          echo "1. Deploy VM"
+          echo "terraform init"
+          terraform init
+          echo "terraform apply -auto-approve"
+          terraform apply -auto-approve
+          echo "2. Backup the deployment details"
+          cp -rf * $(WS)/.
+
+- stage: VALIDATE
+  displayName: VM Validation
+  jobs:
+  - job: validate
+    displayName: VM Deployment Validation
+    steps: 
+      - bash: |
+          echo "3. Post VM Deployment Validations"
+          ansible-playbook -i hosts vm-validation.yml -v
+        
+- stage: API
+  displayName: MongoDB API
+  jobs:
+  - job: api
+    displayName: MongoDB API Deployment
+    steps: 
+      - bash: |
+          echo "4. Deploy and Install Application"
+          cp -p /opt/devops/mongo-api/vault ./group_vars/all/
+          ansible-playbook -i hosts -e "WS=$(WS)" mongo-api.yml -v
+          rm -f ./group_vars/all/vault
+        
+- stage: TEST
+  displayName: CRUD Test
+  jobs:
+  - job: tests
+    displayName: MongoDB API CRUD Test
+    steps: 
+      - bash: |
+          echo "5. Create test"
+          sh test/create.sh
+          sleep 3
+
+          echo "6. Read test"
+          sh test/read.sh
+          sleep 3
+
+          echo "7. Update test"
+          sh test/update.sh
+          sleep 3
+
+          echo "8. Delete test"
+          sh test/delete.sh        
+                  
+- stage: COMPLETE
+  displayName: Ready for Release
+  jobs:
+  - job: complete
+    displayName: Tag the repo and ready for release
+    steps: 
+      - bash: |
+          echo "9. Tag for release ready"
+          cp -p /opt/devops/mongo-api/vault ./group_vars/all/
+          ansible-playbook uat-release.yml -v
+          rm -f ./group_vars/all/vault
+          echo "10. Done!"
+        
+
+
