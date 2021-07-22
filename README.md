@@ -22,4 +22,5 @@ git_pass: [your github password]
 * VM deployment tests / validations
 * Validation reports
 
-
+## Azure DevOps
+[![Build Status](https://dev.azure.com/joechiu2022/hello-devops/_apis/build/status/joehmchiu.devops-cicd-mongo-api?branchName=uat)](https://dev.azure.com/joechiu2022/hello-devops/_build/latest?definitionId=14&branchName=uat)
