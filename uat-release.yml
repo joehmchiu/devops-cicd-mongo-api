@@ -34,4 +34,4 @@
         git commit release-note -m "{{ note }}"
         git push origin {{ branch }} --follow-tags
         echo "Release Note Pushed: UAT release OK - tagged with {{ out.stdout }}"
-        # no_log: yes
+      no_log: yes
