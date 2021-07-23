@@ -153,7 +153,7 @@ stages:
           do
             echo "Test # $i"
             sh test/create.sh | tee $(tmpfile) 
-            echo "{\"$i. Create\":$(cat $(tmpfile) | jq '.status')}" > $(testfile)
+            echo "{\"$i. Create\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
             sh test/read.sh | tee $(tmpfile)
             echo "{\"$i. Read\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
             sh test/update.sh | tee $(tmpfile)
