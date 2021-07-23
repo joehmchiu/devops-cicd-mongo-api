@@ -33,8 +33,8 @@ variables:
   TO: ${{ parameters.TIMEOUT }}
   # Test count
   TC: ${{ parameters.TESTS}}
-  crudxml: 'crud-test.xml'
-  loadxml: 'load-test.xml'
+  crudxml: '/tmp/crud-test.xml'
+  loadxml: '/tmp/load-test.xml'
   tmpfile: '/tmp/test-tmp-file'
   testfile: '/tmp/test-results'
 
@@ -129,22 +129,22 @@ stages:
           sh test/delete.sh | tee $(tmpfile)
           echo "{\"Delete\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
                   
-      - bash: 'pytest -v -p no:warnings --junitxml=$(Build.StagingDirectory)/$(crudxml)'
+      - bash: 'pytest -v -p no:warnings --junitxml=$(crudxml)'
         workingDirectory: 'test'
         displayName: 'Run PyTest'
         continueOnError: true
 
       - task: PublishTestResults@2
-        displayName: 'Publish test result $(Build.StagingDirectory)/$(crudxml)'
+        displayName: 'Publish test result $(crudxml)'
         inputs:
-          testResultsFiles: '$(Build.StagingDirectory)/$(crudxml)'
+          testResultsFiles: '$(crudxml)'
           testRunTitle: CRUD Tests
 
 - stage: TEST2
   displayName: Performance Test
   jobs:
   - job: load
-    timeoutInMinutes: 5
+    timeoutInMinutes: $(TO)
     displayName: MongoDB API Performance Test
     steps: 
       - bash: |
@@ -162,15 +162,15 @@ stages:
             echo "{\"$i. Delete\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
           done
                   
-      - bash: 'pytest -v -p no:warnings --junitxml=$(Build.StagingDirectory)/$(loadxml)'
+      - bash: 'pytest -v -p no:warnings --junitxml=$(loadxml)'
         workingDirectory: 'test'
         displayName: 'Run PyTest'
         continueOnError: true
 
       - task: PublishTestResults@2
-        displayName: 'Publish test result $(Build.StagingDirectory)/$(loadxml)'
+        displayName: 'Publish test result $(loadxml)'
         inputs:
-          testResultsFiles: '$(Build.StagingDirectory)/$(loadxml)'
+          testResultsFiles: '$(loadxml)'
           testRunTitle: Load Testing
 
 - stage: COMPLETE
