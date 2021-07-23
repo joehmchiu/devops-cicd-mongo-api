@@ -151,7 +151,9 @@ stages:
           rm -f $(testfile)
           for i in {1..$(TC)}
           do
+            echo -e ''$_{1..100}'\b-'
             echo "Test # $i"
+            echo -e ''$_{1..100}'\b-'
             sh test/create.sh | tee $(tmpfile) 
             echo "{\"$i. Create\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
             sh test/read.sh | tee $(tmpfile)
