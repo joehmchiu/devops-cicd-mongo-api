@@ -10,7 +10,6 @@ parameters:
     - 180
     - 240
     - 300
-
   - name: TESTS
     type: number
     default: 50
