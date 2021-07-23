@@ -16,6 +16,7 @@ variables:
   adp_path: '/adp'
   WS: '/opt/projects/mongo-api'
   TO: ${{ parameters.TIMEOUT }}
+  xmlfile: 'crud-test.xml'
   tmpfile: '/tmp/test-tmp-file'
   testfile: '/tmp/test-results'
 
@@ -110,6 +111,17 @@ stages:
           sh test/delete.sh | tee $(tmpfile)
           echo "{\"Delete\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
                   
+      - bash: 'pytest -v -p no:warnings --junitxml=$(Build.StagingDirectory)/$(xmlfile)'
+        workingDirectory: 'test'
+        displayName: 'Run PyTest'
+        continueOnError: true
+
+      - task: PublishTestResults@2
+        displayName: 'Publish test result $(Build.StagingDirectory)/$(xmlfile)'
+        inputs:
+          testResultsFiles: '$(Build.StagingDirectory)/$(xmlfile)'
+          testRunTitle: CRUD Tests
+
 - stage: COMPLETE
   displayName: Ready for Release
   jobs:
