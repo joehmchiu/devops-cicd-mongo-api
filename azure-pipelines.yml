@@ -11,12 +11,31 @@ parameters:
     - 240
     - 300
 
+  - name: TESTS
+    type: number
+    default: 50
+    values:
+    - 10
+    - 20
+    - 30
+    - 40
+    - 50
+    - 60
+    - 70
+    - 80
+    - 90
+    - 100
+
 # Set variables
 variables:
   adp_path: '/adp'
   WS: '/opt/projects/mongo-api'
+  # Timeout
   TO: ${{ parameters.TIMEOUT }}
-  xmlfile: 'crud-test.xml'
+  # Test count
+  TC: ${{ parameters.TESTS}}
+  crudxml: 'crud-test.xml'
+  loadxml: 'load-test.xml'
   tmpfile: '/tmp/test-tmp-file'
   testfile: '/tmp/test-results'
 
@@ -85,7 +104,7 @@ stages:
           ansible-playbook -i hosts -e "WS=$(WS)" mongo-api.yml -v
           rm -f ./group_vars/all/vault
         
-- stage: TEST
+- stage: TEST1
   displayName: CRUD Test
   jobs:
   - job: tests
@@ -111,16 +130,48 @@ stages:
           sh test/delete.sh | tee $(tmpfile)
           echo "{\"Delete\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
                   
-      - bash: 'pytest -v -p no:warnings --junitxml=$(Build.StagingDirectory)/$(xmlfile)'
+      - bash: 'pytest -v -p no:warnings --junitxml=$(Build.StagingDirectory)/$(crudxml)'
         workingDirectory: 'test'
         displayName: 'Run PyTest'
         continueOnError: true
 
       - task: PublishTestResults@2
-        displayName: 'Publish test result $(Build.StagingDirectory)/$(xmlfile)'
+        displayName: 'Publish test result $(Build.StagingDirectory)/$(crudxml)'
         inputs:
-          testResultsFiles: '$(Build.StagingDirectory)/$(xmlfile)'
+          testResultsFiles: '$(Build.StagingDirectory)/$(crudxml)'
           testRunTitle: CRUD Tests
+
+- stage: TEST2
+  displayName: Performance Test
+  jobs:
+  - job: load
+    displayName: MongoDB API Performance Test
+    steps: 
+      - bash: |
+          rm -f $(testfile)
+          for i in {1..$(TC)}
+          do
+            echo "Test # $i"
+            sh test/create.sh | tee $(tmpfile) 
+            echo "{\"$i. Create\":$(cat $(tmpfile) | jq '.status')}" > $(testfile)
+            sh test/read.sh | tee $(tmpfile)
+            echo "{\"$i. Read\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
+            sh test/update.sh | tee $(tmpfile)
+            echo "{\"$i. Update\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
+            sh test/delete.sh | tee $(tmpfile)
+            echo "{\"$i. Delete\":$(cat $(tmpfile) | jq '.status')}" >> $(testfile)
+          done
+                  
+      - bash: 'pytest -v -p no:warnings --junitxml=$(Build.StagingDirectory)/$(loadxml)'
+        workingDirectory: 'test'
+        displayName: 'Run PyTest'
+        continueOnError: true
+
+      - task: PublishTestResults@2
+        displayName: 'Publish test result $(Build.StagingDirectory)/$(loadxml)'
+        inputs:
+          testResultsFiles: '$(Build.StagingDirectory)/$(loadxml)'
+          testRunTitle: Load Testing
 
 - stage: COMPLETE
   displayName: Ready for Release
