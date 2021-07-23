@@ -122,6 +122,7 @@ stages:
           cp -p /opt/devops/mongo-api/vault ./group_vars/all/
           ansible-playbook uat-release.yml -v
           rm -f ./group_vars/all/vault
+          rm -f $(tmpfile)
           echo "10. Done!"
         
 
