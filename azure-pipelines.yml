@@ -92,8 +92,7 @@ stages:
     steps: 
       - bash: |
           echo "5. Create test"
-          sh test/create.sh
-          sh query.sh | tee $(tmpfile) 
+          sh test/create.sh | tee $(tmpfile) 
           echo "{\"Create\":$(cat $(tmpfile) | jq '.status')}" > $(testfile)
           sleep 1
 
