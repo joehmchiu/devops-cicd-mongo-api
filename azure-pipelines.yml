@@ -145,6 +145,7 @@ stages:
   displayName: Performance Test
   jobs:
   - job: load
+    timeoutInMinutes: 5
     displayName: MongoDB API Performance Test
     steps: 
       - bash: |
