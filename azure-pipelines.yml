@@ -16,6 +16,8 @@ variables:
   adp_path: '/adp'
   WS: '/opt/projects/mongo-api'
   TO: ${{ parameters.TIMEOUT }}
+  tmpfile: '/tmp/test-tmp-file'
+  testfile: '/tmp/test-result'
 
 trigger:
 - main
@@ -90,18 +92,23 @@ stages:
       - bash: |
           echo "5. Create test"
           sh test/create.sh
+          sh query.sh | tee $(tmpfile) 
+          echo "{\"Create\":$(cat $(tmpfile) | jq '.status')}" > $(testfile)
           sleep 3
 
           echo "6. Read test"
-          sh test/read.sh
+          sh test/read.sh | tee $(testfile)
+          echo "{\"Read\":$(cat $(testfile) | jq '.status')}" >> $(testfile)
           sleep 3
 
           echo "7. Update test"
-          sh test/update.sh
+          sh test/update.sh | tee $(testfile)
+          echo "{\"Update\":$(cat $(testfile) | jq '.status')}" >> $(testfile)
           sleep 3
 
           echo "8. Delete test"
-          sh test/delete.sh        
+          sh test/delete.sh | tee $(testfile)
+          echo "{\"Delete\":$(cat $(testfile) | jq '.status')}" >> $(testfile)
                   
 - stage: COMPLETE
   displayName: Ready for Release
