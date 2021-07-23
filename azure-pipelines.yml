@@ -21,6 +21,7 @@ variables:
 
 trigger:
 - main
+- uat  
 
 # pool:
 #   vmImage: 'ubuntu-latest'
